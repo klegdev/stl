@@ -6,24 +6,18 @@ std::vector<std::pair<uint8_t, uint8_t>> compressGrayscale(std::array<std::array
     std::vector<std::pair<uint8_t, uint8_t>> compressed_data;
 
     std::for_each(data.begin(), data.end(), [&](const auto& row) {
-        auto first = row.begin();
+        bool first = true;
 
-        while (first != row.end()) {
-            auto it = std::adjacent_find(
-                first, row.end(), std::not_equal_to<>{});
-
-            auto last = (it == row.end()) ? row.end() : std::next(it);
-
-            auto count = std::distance(first, last);
-
-            while (count > 0) {
-                auto n = std::min<decltype(count)>(count, 255);
-                compressed_data.emplace_back(*first, static_cast<uint8_t>(n));
-                count -= n;
+        std::for_each(row.begin(), row.end(), [&](uint8_t pixel) {
+            if (first ||
+                compressed_data.back().first != pixel ||
+                compressed_data.back().second == 255) {
+                compressed_data.emplace_back(pixel, 1);
+                first = false;
+            } else {
+                ++compressed_data.back().second;
             }
-
-            first = last;
-        }
+        });
     });
 
     return compressed_data;
