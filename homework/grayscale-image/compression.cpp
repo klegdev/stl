@@ -31,29 +31,33 @@ std::vector<std::pair<uint8_t, uint8_t>> compressGrayscale(std::array<std::array
 
 std::array<std::array<uint8_t, width>, height> decompressGrayscale(std::vector<std::pair<uint8_t, uint8_t>> compressed_data) {
     std::array<std::array<uint8_t, width>, height> decompressed_data = {};
+    std::vector<uint8_t> pixels(width * height, 0);
+
     size_t count = 0;
 
     std::for_each(compressed_data.begin(), compressed_data.end(),
                   [&](const auto& data_pair) {
-                      size_t remaining = data_pair.second;
+                      if (data_pair.second > pixels.size() - count)
+                          throw std::runtime_error("Too much compressed data");
 
-                      while (remaining > 0) {
-                          if (count >= width * height)
-                              throw std::runtime_error("Too much compressed data");
+                      std::fill_n(
+                          pixels.begin() + count,
+                          data_pair.second,
+                          data_pair.first);
 
-                          auto current_height = count / width;
-                          auto current_width = count % width;
+                      count += data_pair.second;
+                  });
 
-                          auto n = std::min(remaining, width - current_width);
+    count = 0;
 
-                          std::fill_n(
-                              decompressed_data[current_height].begin() + current_width,
-                              n,
-                              data_pair.first);
+    std::for_each(decompressed_data.begin(), decompressed_data.end(),
+                  [&](auto& row) {
+                      std::copy_n(
+                          pixels.begin() + count,
+                          width,
+                          row.begin());
 
-                          count += n;
-                          remaining -= n;
-                      }
+                      count += width;
                   });
 
     return decompressed_data;
